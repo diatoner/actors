@@ -3,6 +3,10 @@ import fs from 'node:fs';
 import { createRepl } from '../lib/repl.mjs';
 import { Console } from 'node:console';
 import { Writable } from 'node:stream';
+import { createActorRuntime } from '../lib/actor_runtime.mjs';
+import { createVillager } from '../actors/hungry_villager.mjs';
+import { createEnvironmentAwareness } from '../actors/environment_awareness.mjs';
+import { createHelpCommander } from '../actors/help_commander.mjs';
 
 class Stdout extends Writable {
   strbuf = [];
@@ -12,8 +16,20 @@ class Stdout extends Writable {
     done();
   }
 }
+
 const stdout = new Stdout();
-const repl = createRepl(new Console(stdout));
+const internalConsole = new Console(stdout);
+
+const runtime = createActorRuntime({ debug: false, console: internalConsole });
+createVillager({ console: internalConsole, runtime, name: 'Bob' });
+createVillager({ console: internalConsole, runtime, name: 'Barry' });
+createEnvironmentAwareness({ console: internalConsole, runtime });
+createHelpCommander({ console: internalConsole, runtime });
+
+const repl = createRepl({
+  console: internalConsole,
+  runtime,
+});
 
 const server = http.createServer(async (req, res) => {
 
